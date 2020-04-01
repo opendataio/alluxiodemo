@@ -3,7 +3,12 @@ import alluxio.client.file.FileInStream;
 import alluxio.client.file.FileOutStream;
 import alluxio.client.file.FileSystem;
 import alluxio.client.file.URIStatus;
+import alluxio.conf.InstancedConfiguration;
 import alluxio.exception.AlluxioException;
+import alluxio.grpc.CreateFilePOptions;
+import alluxio.grpc.OpenFilePOptions;
+import alluxio.grpc.ReadPType;
+import alluxio.grpc.WritePType;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -33,11 +38,15 @@ public class AlluxioJavaApiTest {
   private File file;
   AlluxioURI path = new AlluxioURI("/tmp/test");
   private FileSystem fs = FileSystem.Factory.get();
-  private Configuration conf;
+  private Configuration hcfsConf;
 
   @Before
   public void setUpClass() throws IOException, AlluxioException {
-    conf = new Configuration();
+    hcfsConf = new Configuration();
+    
+    InstancedConfiguration alluxioConf = InstancedConfiguration.defaults();
+    fs = FileSystem.Factory.create(alluxioConf);
+    
     this.file = File.createTempFile("hcfstest", ".txt");
     if (!file.exists()) {
       file.createNewFile();
@@ -47,7 +56,9 @@ public class AlluxioJavaApiTest {
     fileWritter.write(content);
     fileWritter.close();
     
-    fs.delete(path);
+    if (fs.exists(path)) {
+      fs.delete(path);
+    }
   }
 
   @After
@@ -70,19 +81,21 @@ public class AlluxioJavaApiTest {
     Path localSrcPath = new Path(file.getAbsolutePath());
     Path localDestPath = new Path(destFilePath.toString());
 
-    try (FSDataInputStream in = localSrcPath.getFileSystem(conf).open(localSrcPath);
-        FileOutStream out = fs.createFile(path)) {
+    try (FSDataInputStream in = localSrcPath.getFileSystem(hcfsConf).open(localSrcPath);
+        FileOutStream out = fs.createFile(path,
+            CreateFilePOptions.newBuilder().setWriteType(WritePType.MUST_CACHE).build())) {
       IOUtils.copy(in, out);
     }
 
-    try (FileInStream in = fs.openFile(path);
-        FSDataOutputStream out = localDestPath.getFileSystem(conf).create(localDestPath)) {
+    try (FileInStream in = fs.openFile(path,
+        OpenFilePOptions.newBuilder().setReadType(ReadPType.NO_CACHE).build());
+        FSDataOutputStream out = localDestPath.getFileSystem(hcfsConf).create(localDestPath)) {
       IOUtils.copy(in, out);
     }
 
-    try (FSDataInputStream isLocalSrc = localSrcPath.getFileSystem(conf).open(localSrcPath);
+    try (FSDataInputStream isLocalSrc = localSrcPath.getFileSystem(hcfsConf).open(localSrcPath);
         FileInStream isAlluxio = fs.openFile(path);
-        FSDataInputStream isLocalDest = localSrcPath.getFileSystem(conf).open(localSrcPath)) {
+        FSDataInputStream isLocalDest = localSrcPath.getFileSystem(hcfsConf).open(localSrcPath)) {
       String md5 = DigestUtils.md5Hex(isLocalSrc);
       String md52 = DigestUtils.md5Hex(isAlluxio);
       String md53 = DigestUtils.md5Hex(isLocalDest);
