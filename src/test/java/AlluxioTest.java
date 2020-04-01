@@ -76,10 +76,10 @@ public class AlluxioTest {
             localDestPath.getFileSystem(conf), localDestPath,
             false, conf);
     try (FSDataInputStream isLocalSrc = localSrcPath.getFileSystem(conf).open(localSrcPath);
-        FSDataInputStream isAlluxip = localSrcPath.getFileSystem(conf).open(localSrcPath);
-        FSDataInputStream isLocalDest = localSrcPath.getFileSystem(conf).open(localSrcPath)) {
+        FSDataInputStream isAlluxio = alluxioPath.getFileSystem(conf).open(alluxioPath);
+        FSDataInputStream isLocalDest = localDestPath.getFileSystem(conf).open(localDestPath)) {
       String md5 = DigestUtils.md5Hex(isLocalSrc);
-      String md52 = DigestUtils.md5Hex(isAlluxip);
+      String md52 = DigestUtils.md5Hex(isAlluxio);
       String md53 = DigestUtils.md5Hex(isLocalDest);
       Assert.assertEquals(md5, md52);
       Assert.assertEquals(md5, md53);

@@ -81,10 +81,10 @@ public class AlluxioJavaApiTest {
     }
 
     try (FSDataInputStream isLocalSrc = localSrcPath.getFileSystem(conf).open(localSrcPath);
-        FSDataInputStream isAlluxip = localSrcPath.getFileSystem(conf).open(localSrcPath);
+        FileInStream isAlluxio = fs.openFile(path);
         FSDataInputStream isLocalDest = localSrcPath.getFileSystem(conf).open(localSrcPath)) {
       String md5 = DigestUtils.md5Hex(isLocalSrc);
-      String md52 = DigestUtils.md5Hex(isAlluxip);
+      String md52 = DigestUtils.md5Hex(isAlluxio);
       String md53 = DigestUtils.md5Hex(isLocalDest);
       Assert.assertEquals(md5, md52);
       Assert.assertEquals(md5, md53);
