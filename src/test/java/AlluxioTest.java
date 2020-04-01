@@ -31,7 +31,7 @@ public class AlluxioTest {
   @Before
   public void setUpClass() {
     conf = new Configuration();
-    conf.set("fs.alluxip.impl", alluxio.hadoop.FileSystem.class.getName());
+//    conf.set("fs.alluxio.impl", alluxio.hadoop.FileSystem.class.getName());
     try {
       this.file = File.createTempFile("hcfstest", ".txt");
       if (!file.exists()) {
